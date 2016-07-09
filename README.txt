@@ -5,6 +5,7 @@ Firewalls, WildFire and AutoFocus.  It provides:
   - a command line program for managing PAN-OS XML configurations
   - a Python and command line interface to the WildFire API
   - a Python and command line interface to the AutoFocus API
+  - a Python and command line interface to the PAN-OS licensing API
 
 Python versions 2.7, 3.2, 3.3 and 3.4 are supported with a single code
 base.  There are no external modules required to use pan-python.
@@ -18,6 +19,7 @@ The pan package contains the following modules:
     pan.wfapi:  pan.wfapi.PanWFapi class
     pan.afapi:  pan.afapi.PanAFapi class factory
     pan.http:   pan.http.PanHttp class (internal)
+    pan.licapi: pan.licapi.PanLicapi class factory
 
 bin/panxapi.py is a command line program for accessing the XML API and
 uses the pan.xapi and pan.commit modules.
@@ -31,6 +33,9 @@ API and uses the pan.wfapi module.
 bin/panafapi.py is a command line program for accessing the AutoFocus
 API and uses the pan.afapi module.
 
+bin/panlicapi.py is a command line program for accessing the PAN-OS
+licensing API and uses the pan.licapi module.
+
 Documentation:
 
   Rendered reStructuredText from GitHub:
@@ -41,6 +46,7 @@ Documentation:
     https://github.com/kevinsteves/pan-python/blob/master/doc/panwfapi.rst
     https://github.com/kevinsteves/pan-python/blob/master/doc/pan.wfapi.rst
     https://github.com/kevinsteves/pan-python/blob/master/doc/pan.afapi.rst
+    https://github.com/kevinsteves/pan-python/blob/master/doc/pan.licapi.rst
     https://github.com/kevinsteves/pan-python/blob/master/doc/panrc.rst
 
   HTML from source distribution:
@@ -51,6 +57,7 @@ Documentation:
     doc/panwfapi.html
     doc/pan.wfapi.html
     doc/pan.afapi.html
+    doc/pan.licapi.html
     doc/panrc.html
 
 Install:

@@ -51,11 +51,12 @@ setup(name='pan-python',
       ],
 
       package_dir={'': 'lib'},
-      packages=['pan', 'pan/afapi'],
+      packages=['pan', 'pan/afapi', 'pan/licapi'],
       scripts=[
           'bin/panxapi.py',
           'bin/panconf.py',
           'bin/panwfapi.py',
           'bin/panafapi.py',
+          'bin/panlicapi.py',
       ],
       )
