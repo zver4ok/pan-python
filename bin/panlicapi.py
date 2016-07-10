@@ -396,7 +396,7 @@ def usage():
     --cpuid id            VM-Series vm-cpuid
     --uuid id             VM-Series vm-uuid
     --token token         deactivate license token
-    --serial serial       get licences for serial number
+    --serial serial       get licenses for serial number
     -w                    write license keys
     --dst dir             destination directory for keys (default .)
     -t tag                .panrc tagname
