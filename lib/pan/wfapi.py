@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2013-2015 Kevin Steves <kevin.steves@pobox.com>
+# Copyright (c) 2013-2016 Kevin Steves <kevin.steves@pobox.com>
 #
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -60,6 +60,12 @@ try:
     import ssl
 except ImportError:
     raise ValueError('SSL support not available')
+
+try:
+    import certifi
+    _have_certifi = True
+except ImportError:
+    _have_certifi = False
 
 _cloud_server = 'wildfire.paloaltonetworks.com'
 _encoding = 'utf-8'
@@ -140,11 +146,13 @@ class PanWFapi:
             except ValueError:
                 raise PanWFapiError('Invalid timeout: %s' % self.timeout)
 
-        if ssl_context is not None:
+        if self.ssl_context is not None:
             try:
                 ssl.SSLContext(ssl.PROTOCOL_SSLv23)
             except AttributeError:
                 raise PanXapiError('SSL module has no SSLContext()')
+        elif _have_certifi:
+            self.ssl_context = self._certifi_ssl_context()
 
         init_panrc = {}  # .panrc args from constructor
         if hostname is not None:
@@ -177,8 +185,12 @@ class PanWFapi:
             self._log(DEBUG2, 'using legacy urllib')
 
     def __str__(self):
-        return '\n'.join((': '.join((k, str(self.__dict__[k]))))
-                         for k in sorted(self.__dict__))
+        x = self.__dict__.copy()
+        for k in x:
+            if k in ['api_key'] and x[k] is not None:
+                x[k] = '*' * 6
+        return '\n'.join((': '.join((k, str(x[k]))))
+                         for k in sorted(x))
 
     def __clear_response(self):
         # XXX naming
@@ -299,19 +311,18 @@ class PanWFapi:
         url = self.uri
         url += request_uri
 
-        self._log(DEBUG1, 'URL: %s', url)
-        self._log(DEBUG1, 'headers: %s', headers)
-
         # body must by type 'bytes' for 3.x
         if _isunicode(body):
             body = body.encode()
 
-        self._log(DEBUG3, 'body: %s', repr(body))
-
         request = Request(url, body, headers)
 
+        self._log(DEBUG1, 'URL: %s', url)
         self._log(DEBUG1, 'method: %s', request.get_method())
         self._log(DEBUG1, 'headers: %s', request.header_items())
+
+        # XXX leaks apikey
+#        self._log(DEBUG3, 'body: %s', repr(body))
 
         kwargs = {
             'url': request,
@@ -633,7 +644,26 @@ class PanWFapi:
 
         return opener.open(url, data, timeout)
 
+    def _certifi_ssl_context(self):
+        if (sys.version_info.major == 2 and sys.hexversion >= 0x02070900 or
+           sys.version_info.major == 3 and sys.hexversion >= 0x03040300):
+            where = certifi.where()
+            self._log(DEBUG1, 'certifi %s: %s', certifi.__version__, where)
+            return ssl.create_default_context(
+                purpose=ssl.Purpose.SERVER_AUTH,
+                cafile=where)
+        else:
+            return None
 
+
+#
+# XXX USE OF cloud_ssl_context() IS DEPRECATED!
+#
+# If your operating system certificate store is out of date you can
+# install certifi (https://pypi.python.org/pypi/certifi) and its CA
+# bundle will be used for SSL server certificate verification when
+# ssl_context is None.
+#
 def cloud_ssl_context():
     # WildFire cloud cafile:
     #   https://certs.godaddy.com/anonymous/repository.pki
@@ -679,6 +709,7 @@ ReYNnyicsbkqWletNw+vHX/bvZ8=
     else:
         return None
 
+
 # Minimal RFC 2388 implementation
 
 # Content-Type: multipart/form-data; boundary=___XXX
@@ -692,7 +723,6 @@ ReYNnyicsbkqWletNw+vHX/bvZ8=
 #
 # XXXfilecontents
 # --___XXX--
-
 
 class _MultiPartFormData:
     def __init__(self):
