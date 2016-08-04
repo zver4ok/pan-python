@@ -119,7 +119,7 @@ class PanCommit:
             s += '<device>%s</device>' % self._device
 
         if self._device_group:
-            s += '<device-group>%s</device-group>' % self._device_group
+            s += '<device-group><entry name="%s"/></device-group>' % self._device_group
 
         # default when no <merge-with-candidate-cfg/> is 'yes'
         # we default to 'no' like the Web UI

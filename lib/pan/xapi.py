@@ -832,6 +832,80 @@ class PanXapi:
                 raise PanXapiError('timeout waiting for legacy commit ' +
                                    'completion')
 
+    def validate(self, cmd=None, sync=False,
+                 interval=None, timeout=None):
+
+        self.__set_api_key()
+
+        self.__clear_response()
+        query = {}
+        query['type'] = 'commit'
+        query['key'] = self.api_key
+        query['cmd'] = '<validate></validate>'
+
+        if interval is not None:
+            try:
+                interval = float(interval)
+                if interval < 0:
+                    raise ValueError
+            except ValueError:
+                raise PanXapiError('Invalid interval: %s' % interval)
+        else:
+            interval = _job_query_interval
+
+        if timeout is not None:
+            try:
+                timeout = int(timeout)
+                if timeout < 0:
+                    raise ValueError
+            except ValueError:
+                raise PanXapiError('Invalid timeout: %s' % timeout)
+
+        response = self.__api_request(query)
+        if not response:
+            raise PanXapiError(self.status_detail)
+
+        if not self.__set_response(response):
+            raise PanXapiError(self.status_detail)
+
+        if sync is not True:
+            return
+
+        job = self.element_root.find('./result/job')
+        if job is None:
+            return
+
+        self._log(DEBUG2, 'validate job: %s', job.text)
+        cmd = 'show jobs id "%s"' % job.text
+        start_time = time.time()
+
+        while True:
+            # sleep at the top of the loop so we don't poll
+            # immediately after commit
+            self._log(DEBUG2, 'sleep %.2f seconds', interval)
+            time.sleep(interval)
+
+            try:
+                self.op(cmd=cmd, cmd_xml=True)
+            except PanXapiError as msg:
+                raise PanXapiError('validate %s: %s' % (cmd, msg))
+
+            path = './result/job/status'
+            status = self.element_root.find(path)
+            if status is None:
+                raise PanXapiError('no status element in ' +
+                                   "'%s' response" % cmd)
+            if status.text == 'FIN':
+                # XXX commit vs. commit-all job status
+                return
+
+            self._log(DEBUG2, 'job %s status %s', job.text, status.text)
+
+            if (timeout is not None and timeout != 0 and
+                        time.time() > start_time + timeout):
+                raise PanXapiError('timeout waiting for ' +
+                                   'job %s completion' % job.text)
+
     def commit(self, cmd=None, action=None, sync=False,
                interval=None, timeout=None, extra_qs=None):
         self.__set_api_key()
